@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!--
+  ================================================================
+  Library Book Share - Public Landing Page
+  ----------------------------------------------------------------
+  Purpose:
+    Explain to a first-time visitor WHAT the system is, HOW it
+    works, and WHY they would use it, before sending them to the
+    login / register page.
+
+  This page is pure HTML + CSS - no JavaScript needed - so it is
+  safe to demo even if the PHP backend is offline.
+  ================================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Book Share System</title>
+  <meta name="description" content="Share, borrow and exchange books with readers near you.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top navigation: brand on the left, action buttons on the right. -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="home.html" class="brand">📚 Library Book Share</a>
+      <div class="nav-user">
+        <a class="btn btn-sm btn-secondary" href="index.html">Login</a>
+        <a class="btn btn-sm btn-success" href="index.html#register">Register</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="landing-hero">
+    <div class="container">
+      <h1>Share, borrow and discover books<br>with readers near you.</h1>
+      <p class="subtitle">
+        A community platform for students and book lovers to lend out
+        the books they own and find new reads close to home.
+      </p>
+      <div class="landing-cta">
+        <a class="btn btn-primary btn-lg" href="index.html#register">Create a free account</a>
+        <a class="btn btn-secondary btn-lg" href="index.html">I already have an account</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="landing-section">
+    <div class="container">
+      <h2 class="section-title">How it works</h2>
+      <div class="how-grid">
+        <div class="how-step">
+          <div class="how-num">1</div>
+          <h3>Register &amp; verify</h3>
+          <p>Create an account, then click the verification link we email you so other readers know you are real.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-num">2</div>
+          <h3>List your books</h3>
+          <p>Add the books on your shelf with title, author, category and condition so others can find them.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-num">3</div>
+          <h3>Browse the map</h3>
+          <p>See books available from readers near your location using Google Maps and category filters.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-num">4</div>
+          <h3>Request &amp; chat</h3>
+          <p>Send a borrow request, message the owner, agree on a meet-up and mark the exchange as completed.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BENEFITS -->
+  <section class="landing-section landing-section-alt">
+    <div class="container">
+      <h2 class="section-title">Why use Library Book Share?</h2>
+      <div class="benefit-grid">
+        <div class="benefit-card">
+          <div class="benefit-icon">💸</div>
+          <h3>Save money</h3>
+          <p>Borrow textbooks and novels for free instead of buying every book you only read once.</p>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">🌍</div>
+          <h3>Reduce waste</h3>
+          <p>Give the books gathering dust on your shelf a second life with a new reader.</p>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">🤝</div>
+          <h3>Meet readers</h3>
+          <p>Connect with people in your neighbourhood who share your reading interests.</p>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-icon">🔒</div>
+          <h3>Safe by design</h3>
+          <p>Email verification, JWT-protected APIs and clear borrow/return tracking.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="landing-section">
+    <div class="container text-center">
+      <h2 class="section-title">Ready to start sharing?</h2>
+      <p style="max-width:520px;margin:0 auto 24px;color:#555;">
+        Free forever. Built as a final year Computer Science project at the
+        Catholic University of Eastern Africa.
+      </p>
+      <a class="btn btn-primary btn-lg" href="index.html#register">Get started</a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Library Book Share System &copy; 2026 | Developed by Ephrem Gichuhi | Catholic University of Eastern Africa</p>
+  </footer>
+
+</body>
+</html>
