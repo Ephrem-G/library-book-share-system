@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Book Share System - Login</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="logo">📚</div>
+      <h1>Library Book Share</h1>
+      <p class="subtitle">Share, Borrow & Connect with Readers Near You</p>
+
+      <!-- Message Area -->
+      <div id="authMessage" class="auth-message hidden"></div>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="showAuthTab('login')">Login</div>
+        <div class="auth-tab" onclick="showAuthTab('register')">Register</div>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="loginEmail">Email Address</label>
+          <input type="email" id="loginEmail" class="form-control" placeholder="Enter your email" required>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Login</button>
+        <p class="text-center mt-2" style="font-size:13px;">
+          <a href="#" onclick="resendVerification(event)">Resend verification email</a>
+        </p>
+      </form>
+
+      <!-- REGISTER FORM -->
+      <form id="registerForm" class="hidden" onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label for="regName">Full Name</label>
+          <input type="text" id="regName" class="form-control" placeholder="Enter your full name" required>
+        </div>
+        <div class="form-group">
+          <label for="regEmail">Email Address</label>
+          <input type="email" id="regEmail" class="form-control" placeholder="Enter your email" required>
+        </div>
+        <div class="form-group">
+          <label for="regPhone">Phone Number</label>
+          <!-- Kenyan mobile: 10 digits starting 07 or 01 (pattern assists the browser; JS + backend also validate) -->
+          <input type="tel" id="regPhone" class="form-control" placeholder="e.g. 0712345678"
+                 required pattern="0[17][0-9]{8}" maxlength="10" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label for="regPassword">Password</label>
+          <input type="password" id="regPassword" class="form-control" placeholder="Create a password (min 6 chars)" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label for="regLocation">Location / Area</label>
+          <input type="text" id="regLocation" class="form-control" placeholder="e.g. Nairobi, Langata" required>
+        </div>
+
+        <!-- Geolocation: hidden lat/lng filled by the browser -->
+        <div class="form-group">
+          <button type="button" class="btn btn-secondary btn-block" onclick="captureLocation()">📍 Use My Current Location</button>
+          <small id="geoStatus" style="display:block; color:#666; margin-top:6px;">No location captured yet (a default will be used).</small>
+          <input type="hidden" id="regLat">
+          <input type="hidden" id="regLng">
+        </div>
+
+        <button type="submit" class="btn btn-success btn-block">Create Account</button>
+      </form>
+
+      <p class="text-center mt-2" style="font-size:13px; color:#999;">
+        A project by Ephrem Gichuhi ❤️ CUEA<br>
+        <a href="admin.html" style="color:#999;">Admin login →</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- API helper -->
+  <script src="js/api.js"></script>
+
+  <script>
+    // ── If already logged in, go straight to dashboard ──
+    (function() {
+      if (getToken()) {
+        window.location.href = 'dashboard.html';
+      }
+    })();
+
+    // ── Tab Switching ──
+    function showAuthTab(tab) {
+      var tabs = document.querySelectorAll('.auth-tab');
+      tabs[0].classList.toggle('active', tab === 'login');
+      tabs[1].classList.toggle('active', tab === 'register');
+      document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
+      document.getElementById('authMessage').classList.add('hidden');
+    }
+
+    // ── Show Message ──
+    function showMessage(text, type) {
+      var el = document.getElementById('authMessage');
+      el.textContent = text;
+      el.className = 'auth-message ' + type;
+    }
+
+    // ── Capture browser geolocation ──
+    function captureLocation() {
+      var status = document.getElementById('geoStatus');
+      if (!navigator.geolocation) {
+        status.textContent = 'Geolocation not supported by this browser.';
+        return;
+      }
+      status.textContent = 'Requesting location...';
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        document.getElementById('regLat').value = pos.coords.latitude;
+        document.getElementById('regLng').value = pos.coords.longitude;
+        status.textContent = '✓ Location captured (' +
+          pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4) + ')';
+      }, function(err) {
+        status.textContent = 'Could not get location: ' + err.message + ' (a default will be used).';
+      });
+    }
+
+    // ── Register ──
+    async function handleRegister(e) {
+      e.preventDefault();
+      var fullName = document.getElementById('regName').value.trim();
+      var email    = document.getElementById('regEmail').value.trim().toLowerCase();
+      var phone    = document.getElementById('regPhone').value.trim();
+      var password = document.getElementById('regPassword').value;
+      var location = document.getElementById('regLocation').value.trim();
+      var lat      = document.getElementById('regLat').value;
+      var lng      = document.getElementById('regLng').value;
+
+      // Validate Kenyan phone before submitting (backend re-checks this too).
+      // Rule: exactly 10 digits, starts 07 or 01, digits only.
+      if (!/^0[17][0-9]{8}$/.test(phone)) {
+        showMessage('Phone number must be exactly 10 digits and start with 07 or 01', 'error');
+        return;
+      }
+
+      // Default Nairobi coords if user did not capture
+      if (!lat || !lng) { lat = -1.2921; lng = 36.8219; }
+
+      try {
+        var data = await api('/auth/register', {
+          method: 'POST',
+          body: { fullName: fullName, email: email, password: password, phone: phone,
+                  location: location, latitude: Number(lat), longitude: Number(lng) }
+        });
+        document.getElementById('registerForm').reset();
+        showAuthTab('login');
+        showMessage(data.message || 'Account created. Please verify your email before logging in.', 'success');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    // Resend verification email
+    async function resendVerification(e) {
+      e.preventDefault();
+      var email = document.getElementById('loginEmail').value.trim().toLowerCase();
+      if (!email) {
+        showMessage('Enter your email address first, then click resend.', 'error');
+        return;
+      }
+      try {
+        var data = await api('/auth/resend-verification', {
+          method: 'POST',
+          body: { email: email }
+        });
+        showMessage(data.message || 'Verification email sent again.', 'success');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    // ── Login ──
+    async function handleLogin(e) {
+      e.preventDefault();
+      var email    = document.getElementById('loginEmail').value.trim().toLowerCase();
+      var password = document.getElementById('loginPassword').value;
+
+      try {
+        var data = await api('/auth/login', {
+          method: 'POST',
+          body: { email: email, password: password }
+        });
+        setToken(data.token);
+        setCurrentUser(data.user);
+        window.location.href = 'dashboard.html';
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+DirectoryIndex index.html index.php
+Options -MultiViews
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Keep JWT Authorization headers available to PHP on Apache/XAMPP.
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+  SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
+
+  # Send clean API URLs such as /api/books, /api/requests/1, /api/messages
+  # to the PHP API router, even when a real folder with the same name exists.
+  RewriteRule ^api/?$ api/index.php [QSA,L]
+  RewriteCond %{REQUEST_URI} !/api/index\.php$
+  RewriteCond %{REQUEST_URI} !\.php$
+  RewriteRule ^api/(.*)$ api/index.php?path=$1 [QSA,L]
+</IfModule>

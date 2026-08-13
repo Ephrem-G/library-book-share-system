@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Book Share - Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ════════ LOGIN VIEW ════════ -->
+  <div id="adminLoginView" class="auth-page">
+    <div class="auth-card">
+      <div class="logo">🛡️</div>
+      <h1>Admin Panel</h1>
+      <p class="subtitle">Library Book Share - Administrators only</p>
+
+      <div id="adminMsg" class="auth-message hidden"></div>
+
+      <form onsubmit="adminLogin(event)">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="adminEmail" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="adminPassword" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Login as Admin</button>
+      </form>
+
+      <p class="text-center mt-2" style="font-size:13px;color:#999;">
+        <a href="index.html">← Back to user login</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- ════════ DASHBOARD VIEW ════════ -->
+  <div id="adminDashView" class="hidden">
+    <nav class="navbar">
+      <div class="container">
+        <a href="#" class="brand">🛡️ Admin Panel</a>
+        <div class="nav-user">
+          <button class="btn btn-sm btn-danger" onclick="adminLogout()">Logout</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="page-section">
+      <div class="container">
+
+        <!-- System Summary Report: live statistics generated from existing tables -->
+        <div class="card">
+          <div class="card-header"><h3>📊 System Summary</h3></div>
+          <div style="padding:16px;">
+            <div class="stats-row">
+              <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-number" id="statTotalUsers">0</div><div class="stat-label">Total Users</div></div>
+              <div class="stat-card"><div class="stat-icon">📚</div><div class="stat-number" id="statTotalBooks">0</div><div class="stat-label">Total Books</div></div>
+              <div class="stat-card"><div class="stat-icon">🟢</div><div class="stat-number" id="statAvailableBooks">0</div><div class="stat-label">Available Books</div></div>
+              <div class="stat-card"><div class="stat-icon">📖</div><div class="stat-number" id="statBorrowedBooks">0</div><div class="stat-label">Borrowed Books</div></div>
+              <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-number" id="statPendingReq">0</div><div class="stat-label">Pending Requests</div></div>
+              <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-number" id="statApprovedReq">0</div><div class="stat-label">Approved Requests</div></div>
+              <div class="stat-card"><div class="stat-icon">🤝</div><div class="stat-number" id="statCompleted">0</div><div class="stat-label">Completed Exchanges</div></div>
+              <div class="stat-card"><div class="stat-icon">⏰</div><div class="stat-number" id="statOverdue">0</div><div class="stat-label">Overdue Books</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>👥 Registered Users</h3></div>
+          <div id="usersTable"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>📚 All Books</h3></div>
+          <div id="booksTable"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ── Tiny inline API wrapper for the admin page ──
+  var ADMIN_TOKEN_KEY = 'lbs_admin_token';
+
+  function getToken() { return localStorage.getItem(ADMIN_TOKEN_KEY); }
+
+  function buildApiUrl(path) {
+    var route = String(path || '').replace(/^\/+/, '');
+    var queryIndex = route.indexOf('?');
+    var routePath = queryIndex >= 0 ? route.slice(0, queryIndex) : route;
+    var query = queryIndex >= 0 ? route.slice(queryIndex + 1) : '';
+    var url = 'api/index.php?path=' + encodeURIComponent(routePath);
+    if (query) url += '&' + query;
+    return url;
+  }
+
+  async function api(path, opts) {
+    opts = opts || {};
+    opts.headers = opts.headers || {};
+    opts.headers['Content-Type'] = 'application/json';
+    var t = getToken();
+    if (t) opts.headers['Authorization'] = 'Bearer ' + t;
+    if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
+    var res = await fetch(buildApiUrl(path), opts);
+    var data = await res.json().catch(function(){ return {}; });
+    if (!res.ok || data.ok === false) throw new Error(data.error || 'Request failed');
+    return data.data;
+  }
+
+  function showMsg(text, type) {
+    var el = document.getElementById('adminMsg');
+    el.textContent = text;
+    el.className = 'auth-message ' + (type || 'error');
+  }
+
+  function escapeHtml(t) {
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(t == null ? '' : String(t)));
+    return d.innerHTML;
+  }
+
+  // ── Login ──
+  async function adminLogin(e) {
+    e.preventDefault();
+    var email = document.getElementById('adminEmail').value.trim();
+    var password = document.getElementById('adminPassword').value;
+    try {
+      var d = await api('/admin/login', { method: 'POST', body: { email: email, password: password } });
+      localStorage.setItem(ADMIN_TOKEN_KEY, d.token);
+      enterDashboard();
+    } catch (err) {
+      showMsg(err.message, 'error');
+    }
+  }
+
+  function adminLogout() {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    document.getElementById('adminDashView').classList.add('hidden');
+    document.getElementById('adminLoginView').classList.remove('hidden');
+  }
+
+  async function enterDashboard() {
+    try {
+      await loadSystemSummary();
+      await loadUsers();
+      await loadBooks();
+      document.getElementById('adminLoginView').classList.add('hidden');
+      document.getElementById('adminDashView').classList.remove('hidden');
+    } catch (err) {
+      adminLogout();
+      showMsg(err.message || 'Admin session expired. Please log in again.', 'error');
+    }
+  }
+
+  // ── System Summary ──
+  // Fetches the live counts and fills the summary stat cards.
+  async function loadSystemSummary() {
+    var s = await api('/admin/stats');
+    document.getElementById('statTotalUsers').textContent     = s.totalUsers;
+    document.getElementById('statTotalBooks').textContent     = s.totalBooks;
+    document.getElementById('statAvailableBooks').textContent = s.availableBooks;
+    document.getElementById('statBorrowedBooks').textContent  = s.borrowedBooks;
+    document.getElementById('statPendingReq').textContent     = s.pendingRequests;
+    document.getElementById('statApprovedReq').textContent    = s.approvedRequests;
+    document.getElementById('statCompleted').textContent      = s.completedExchanges;
+    document.getElementById('statOverdue').textContent        = s.overdueBooks;
+  }
+
+  // ── Users ──
+  async function loadUsers() {
+    try {
+      var users = await api('/admin/users');
+      var html = '<table class="requests-table"><thead><tr>' +
+                 '<th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Location</th><th>Joined</th><th>Action</th>' +
+                 '</tr></thead><tbody>';
+      users.forEach(function(u) {
+        html += '<tr>' +
+          '<td>' + u.id + '</td>' +
+          '<td>' + escapeHtml(u.fullName) + '</td>' +
+          '<td>' + escapeHtml(u.email) + '</td>' +
+          '<td>' + escapeHtml(u.phone || '-') + '</td>' +
+          '<td>' + escapeHtml(u.location) + '</td>' +
+          '<td>' + new Date(u.joinDate).toLocaleDateString() + '</td>' +
+          '<td><button class="btn btn-danger btn-sm" onclick="deleteUser(' + u.id + ')">Delete</button></td>' +
+          '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('usersTable').innerHTML = users.length
+        ? html
+        : '<div class="empty-state" style="padding:30px;"><p>No users.</p></div>';
+    } catch (err) {
+      if (err.message && err.message.toLowerCase().indexOf('token') !== -1) adminLogout();
+    }
+  }
+
+  async function deleteUser(id) {
+    if (!confirm('Delete this user and all their books? This cannot be undone.')) return;
+    await api('/admin/users/' + id, { method: 'DELETE' });
+    await loadUsers();
+    await loadBooks();
+  }
+
+  // ── Books ──
+  async function loadBooks() {
+    var books = await api('/admin/books');
+    var html = '<table class="requests-table"><thead><tr>' +
+               '<th>ID</th><th>Title</th><th>Author</th><th>Category</th><th>Owner</th><th>Status</th><th>Action</th>' +
+               '</tr></thead><tbody>';
+    books.forEach(function(b) {
+      html += '<tr>' +
+        '<td>' + b.id + '</td>' +
+        '<td>' + escapeHtml(b.title) + '</td>' +
+        '<td>' + escapeHtml(b.author) + '</td>' +
+        '<td>' + escapeHtml(b.category) + '</td>' +
+        '<td>' + escapeHtml(b.ownerName) + '</td>' +
+        '<td><span class="book-status ' + (b.status === 'available' ? 'available' : 'borrowed') + '">' + b.status + '</span></td>' +
+        '<td><button class="btn btn-danger btn-sm" onclick="deleteBook(' + b.id + ')">Remove</button></td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('booksTable').innerHTML = books.length
+      ? html
+      : '<div class="empty-state" style="padding:30px;"><p>No books.</p></div>';
+  }
+
+  async function deleteBook(id) {
+    if (!confirm('Remove this book?')) return;
+    await api('/admin/books/' + id, { method: 'DELETE' });
+    await loadBooks();
+  }
+
+  // ── Auto-enter dashboard if already logged in ──
+  if (getToken()) enterDashboard();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Book Share System - Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ═══════════════ NAVBAR ═══════════════ -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="#" class="brand" onclick="showSection('home')">📚 Library Book Share</a>
+      <ul class="nav-links">
+        <li><a href="#" onclick="showSection('home')" id="navHome" class="active">🏠 Home</a></li>
+        <li><a href="#" onclick="showSection('mybooks')" id="navMybooks">📖 My Books</a></li>
+        <li><a href="#" onclick="showSection('browse')" id="navBrowse">🔍 Browse</a></li>
+        <li><a href="#" onclick="showSection('requests')" id="navRequests">📋 Requests</a></li>
+        <li><a href="#" onclick="showSection('messages')" id="navMessages">💬 Messages <span id="msgBadge" class="badge hidden">0</span></a></li>
+        <li><a href="#" onclick="showSection('profile')" id="navProfile">👤 Profile</a></li>
+        <li><a href="#" onclick="showSection('reports')" id="navReports">📊 Reports</a></li>
+      </ul>
+      <div class="nav-user">
+        <span id="navUserName"></span>
+        <button class="btn btn-sm btn-danger" onclick="handleLogout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════════════ HOME SECTION ═══════════════ -->
+  <div id="sectionHome" class="page-section">
+    <div class="container">
+      <div class="page-header">
+        <h2>👋 Welcome, <span id="welcomeName"></span>!</h2>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-icon">📚</div><div class="stat-number" id="statMyBooks">0</div><div class="stat-label">My Books Listed</div></div>
+        <div class="stat-card"><div class="stat-icon">🌍</div><div class="stat-number" id="statAvailable">0</div><div class="stat-label">Books Available Nearby</div></div>
+        <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-number" id="statRequests">0</div><div class="stat-label">Pending Requests</div></div>
+        <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-number" id="statMessages">0</div><div class="stat-label">Messages</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>📖 Recently Added Books</h3>
+          <button class="btn btn-primary btn-sm" onclick="showSection('browse')">Browse All</button>
+        </div>
+        <div class="book-grid" id="recentBooks"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MY BOOKS SECTION ═══════════════ -->
+  <div id="sectionMybooks" class="page-section hidden">
+    <div class="container">
+      <div class="page-header">
+        <h2>📖 My Books</h2>
+        <button class="btn btn-success" onclick="openAddBookModal()">+ Add New Book</button>
+      </div>
+      <div class="book-grid" id="myBooksGrid"></div>
+      <div id="myBooksEmpty" class="empty-state hidden">
+        <div class="empty-icon">📚</div>
+        <h3>No Books Yet</h3>
+        <p>Click "Add New Book" to list your first book for sharing!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ BROWSE BOOKS SECTION ═══════════════ -->
+  <div id="sectionBrowse" class="page-section hidden">
+    <div class="container">
+      <div class="page-header">
+        <h2>🔍 Browse Books</h2>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search by title, author, or location..." oninput="filterBooks()">
+        <select id="searchCategory" class="form-control" style="max-width:200px" onchange="filterBooks()">
+          <option value="">All Categories</option>
+          <option value="Fiction">Fiction</option>
+          <option value="Non-Fiction">Non-Fiction</option>
+          <option value="Academic">Academic</option>
+          <option value="Science">Science</option>
+          <option value="Technology">Technology</option>
+          <option value="History">History</option>
+          <option value="Literature">Literature</option>
+          <option value="Religion">Religion</option>
+          <option value="Other">Other</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:14px;">
+          <input type="checkbox" id="searchNearby" onchange="filterBooks()"> Sort by nearest
+        </label>
+      </div>
+
+      <!-- ── Google Map ── -->
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div id="map" style="width:100%; height:340px;"></div>
+      </div>
+
+      <div class="book-grid" id="browseGrid" style="margin-top:20px;"></div>
+      <div id="browseEmpty" class="empty-state hidden">
+        <div class="empty-icon">🔍</div>
+        <h3>No Books Found</h3>
+        <p>Try changing your search or filter criteria.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ REQUESTS SECTION ═══════════════ -->
+  <div id="sectionRequests" class="page-section hidden">
+    <div class="container">
+      <div class="page-header">
+        <h2>📋 Book Requests</h2>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>📥 Incoming Requests (Books Others Want to Borrow)</h3></div>
+        <div id="incomingRequests"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>📤 My Requests (Books I Want to Borrow)</h3></div>
+        <div id="outgoingRequests"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MESSAGES SECTION ═══════════════ -->
+  <div id="sectionMessages" class="page-section hidden">
+    <div class="container">
+      <div class="page-header"><h2>💬 Messages</h2></div>
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; min-height:500px;">
+          <div style="width:300px; border-right:1px solid #eee;" id="conversationList">
+            <div style="padding:14px; border-bottom:1px solid #eee; font-weight:600; color:#1a3a5c;">Conversations</div>
+            <div class="message-list" id="messageList"></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column;" id="chatArea">
+            <div id="chatPlaceholder" class="empty-state" style="padding:80px 20px;">
+              <div class="empty-icon">💬</div>
+              <h3>Select a Conversation</h3>
+              <p>Choose a conversation from the left to start chatting.</p>
+            </div>
+            <div id="chatWindow" class="chat-window hidden">
+              <div class="chat-header">
+                <div class="message-avatar" id="chatAvatar"></div>
+                <h4 id="chatUserName"></h4>
+              </div>
+              <div class="chat-messages" id="chatMessages"></div>
+              <form class="chat-input" id="chatForm" onsubmit="return sendMessage(event)">
+                <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
+                <button class="btn btn-primary btn-sm" id="chatSendBtn" type="submit">Send</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PROFILE SECTION ═══════════════ -->
+  <div id="sectionProfile" class="page-section hidden">
+    <div class="container">
+      <div class="page-header"><h2>👤 My Profile</h2></div>
+      <div class="card profile-card">
+        <div class="profile-avatar" id="profileAvatar"></div>
+        <form onsubmit="updateProfile(event)">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="profileName" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="profileEmail" class="form-control" disabled>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="profilePhone" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Location / Area</label>
+            <input type="text" id="profileLocation" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-secondary" onclick="recaptureLocation()">📍 Update My GPS Location</button>
+            <small id="profileGeoStatus" style="display:block; color:#666; margin-top:6px;"></small>
+          </div>
+          <div class="form-group">
+            <label>Member Since</label>
+            <input type="text" id="profileJoinDate" class="form-control" disabled>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Update Profile</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ REPORTS SECTION ═══════════════ -->
+  <div id="sectionReports" class="page-section hidden">
+    <div class="container">
+      <div class="page-header"><h2>📊 Reports</h2></div>
+      <!-- Print button: uses the browser's built-in print dialog (no PDF library) -->
+      <div style="margin-bottom:16px;">
+        <button class="btn btn-sm btn-secondary" onclick="printReport()">🖨️ Print Report</button>
+      </div>
+      <!-- Totals (filled by loadReports) -->
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-icon">📚</div><div class="stat-number" id="statTotalBorrowed">0</div><div class="stat-label">Total Books Borrowed</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-number" id="statTotalReturned">0</div><div class="stat-label">Total Books Returned</div></div>
+        <div class="stat-card"><div class="stat-icon">📖</div><div class="stat-number" id="statActiveBorrow">0</div><div class="stat-label">Total Active Borrowings</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>📜 Borrowing History</h3></div>
+        <div id="borrowingHistory"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ADD/EDIT BOOK MODAL ═══════════════ -->
+  <div id="bookModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="bookModalTitle">Add New Book</h3>
+        <button class="modal-close" onclick="closeBookModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="bookForm" onsubmit="handleBookSubmit(event)">
+          <input type="hidden" id="bookEditId">
+          <div class="form-group">
+            <label for="bookTitle">Book Title</label>
+            <input type="text" id="bookTitle" class="form-control" placeholder="Enter the book title" required>
+          </div>
+          <div class="form-group">
+            <label for="bookAuthor">Author</label>
+            <input type="text" id="bookAuthor" class="form-control" placeholder="Enter the author's name" required>
+          </div>
+          <div class="form-group">
+            <label for="bookCategory">Category</label>
+            <select id="bookCategory" class="form-control" required>
+              <option value="">Select a category</option>
+              <option value="Fiction">Fiction</option>
+              <option value="Non-Fiction">Non-Fiction</option>
+              <option value="Academic">Academic</option>
+              <option value="Science">Science</option>
+              <option value="Technology">Technology</option>
+              <option value="History">History</option>
+              <option value="Literature">Literature</option>
+              <option value="Religion">Religion</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="bookDescription">Description (optional)</label>
+            <textarea id="bookDescription" class="form-control" placeholder="Brief description of the book"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="bookCondition">Condition</label>
+            <select id="bookCondition" class="form-control" required>
+              <option value="New">New</option>
+              <option value="Good">Good</option>
+              <option value="Fair">Fair</option>
+              <option value="Worn">Worn</option>
+            </select>
+          </div>
+          <div class="modal-footer" style="padding:0; border:none; margin-top:16px;">
+            <button type="button" class="btn btn-secondary" onclick="closeBookModal()">Cancel</button>
+            <button type="submit" class="btn btn-success" id="bookSubmitBtn">Add Book</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ APPROVE (SET RETURN DATE) MODAL ═══════════════ -->
+  <div id="approveModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Approve Request</h3>
+        <button class="modal-close" onclick="closeApproveModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="approveForm" onsubmit="submitApprove(event)">
+          <div class="form-group">
+            <label for="approveDueDate">Return Date (when the book is due back)</label>
+            <input type="date" id="approveDueDate" class="form-control" required>
+          </div>
+          <div class="modal-footer" style="padding:0; border:none; margin-top:16px;">
+            <button type="button" class="btn btn-secondary" onclick="closeApproveModal()">Cancel</button>
+            <button type="submit" class="btn btn-success">Approve &amp; Set Date</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ BOOK DETAIL MODAL ═══════════════ -->
+  <div id="detailModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="detailTitle">Book Details</h3>
+        <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="detailBody"></div>
+      <div class="modal-footer" id="detailFooter"></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>Library Book Share System &copy; 2026 | Developed by Ephrem Gichuhi | Catholic University of Eastern Africa</p>
+  </footer>
+
+  <!-- API helper + main app -->
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+
+  <!--
+    Google Maps loader.
+    Uses the project's API key (the same value kept in js/config.js).
+    Get/replace a key at https://console.cloud.google.com/google/maps-apis
+  -->
+  <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDywjE6MaXbGmu8UbBf5wcSCaYNOnT-nRk&callback=onGoogleMapsReady">
+  </script>
+
+</body>
+</html>
